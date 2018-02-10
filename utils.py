@@ -12,6 +12,18 @@ COLORS = {
 }
 
 
+def blue(text):
+    return "%s%s%s" % (COLORS["blue"], text, COLORS["reset"])
+
+
+def green(text):
+    return "%s%s%s" % (COLORS["green"], text, COLORS["reset"])
+
+
+def red(text):
+    return "%s%s%s" % (COLORS["red"], text, COLORS["reset"])
+
+
 def format_data(data):
     table = AsciiTable(data)
     print(table.table)

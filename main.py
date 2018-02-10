@@ -17,10 +17,11 @@ def main():
     parser = argparse.ArgumentParser(prog='Jenkins handler',
                                      description='Handle jobs on Jenkins servers.')
     subparsers = parser.add_subparsers(dest='action')
-    parser_a = subparsers.add_parser('list')
-    parser_b = subparsers.add_parser('details')
-    parser_b.add_argument(
+    list_parser = subparsers.add_parser('list', help='List all jobs')
+    details_parser = subparsers.add_parser('details', help='Get details of a job')
+    details_parser.add_argument(
         '-j', '--job_name', dest='job_name', help='Name of the job to get info of')
+    list_active_parser = subparsers.add_parser('list_active', help='List all active jobs')
     parser.add_argument('-c', '--config', dest='filename', required=True,
                         type=lambda x: is_valid_file(parser, x),
                         help='path of the configuration file')
