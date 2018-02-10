@@ -1,9 +1,12 @@
+#!/usr/bin/env python
+
 import argparse
 import os
 import yaml
+import time
 from jenkinsapi.jenkins import Jenkins
+from jenkinsapi import custom_exceptions
 from terminaltables import AsciiTable
-
 
 COLORS = {
     "red": "\033[1;31m",
@@ -16,38 +19,55 @@ COLORS = {
     "reset": "\033[0;0m",
 }
 
+parser = argparse.ArgumentParser(prog='Jenkins handler',
+                                 description='Handle jobs on Jenkins servers.')
 
-def list_jobs(config):
-    print('%sJobs list for %s %s' % (COLORS["blue"], config['url'], COLORS['reset']))
-    server = Jenkins(config['url'])  # , username=config['login'], password=config['password']
+subparsers = parser.add_subparsers(dest='action')
+
+parser_a = subparsers.add_parser('list')
+parser_b = subparsers.add_parser('details')
+parser_b.add_argument(
+    '-j', '--job_name', dest='job_name', help='Name of the job to get info of')
+
+parser.add_argument('-c', '--config', dest='filename', required=True,
+                    type=lambda x: is_valid_file(parser, x),
+                    help='path of the configuration file')
+
+
+def job_list(config, params=None):
+    print('%sFetching job list for %s %s...' % (COLORS["blue"], config['url'], COLORS['reset']))
+    server = Jenkins(config['url'], timeout=2000, username=config['login'], password=config['password'])
     table_data = [
         ['Name', 'Status', 'Url']
     ]
-    rows = 0
+    count = 0
+    start = time.time()
     for job_name, job_instance in server.get_jobs():
-        rows += 1
-        if rows == 4:
+        count += 1
+        if count >= 10:
             break
         table_data.append([
-            job_instance.name if job_instance.is_enabled() else COLORS["red"] + job_instance.name + COLORS["reset"],
+            job_instance.name,
             COLORS["yellow"] + 'RUNNING' + COLORS["reset"] if job_instance.is_running() else
             COLORS["red"] + 'STOPPED' + COLORS["reset"],
             job_instance.url
         ])
 
+    print(time.time() - start)
     table = AsciiTable(table_data)
-
     print(table.table)
+    print("Jobs found: ", len(server.get_jobs_list()))
 
 
-def job_info():
-    print('JOB INFO')
-
-
-AVAILABLE_ACTIONS = {
-    "list": list_jobs,
-    "info": job_info
-}
+def job_details(config, job_name):
+    print('%sGetting details for job %s on server %s %s...'
+          % (COLORS["blue"], job_name, str(config['url']), COLORS['reset']))
+    server = Jenkins(config['url'])  # , username=config['login'], password=config['password']
+    try:
+        job = server.get_job(job_name)
+        print('Got Job %s. Running: %s. Enabled: %s' % (job, job.is_running(), job.is_enabled()))
+    except custom_exceptions.UnknownJob:
+        print('No job found : %s' % job_name)
 
 
 def is_valid_file(parser, arg):
@@ -58,20 +78,10 @@ def is_valid_file(parser, arg):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='Jenkins handler',
-                                     description='Handle jobs on Jenkins servers.')
-    parser.add_argument('action', metavar='ACTION',
-                        help='The action to perform on the jenkins servers')
-    parser.add_argument('--config', dest="filename", required=True,
-                        type=lambda x: is_valid_file(parser, x),
-                        help='path of the configuration file')
-
-    args = parser.parse_args()
-    config = yaml.load(args.filename)
-    if args.action not in AVAILABLE_ACTIONS:
-        parser.error("The action %s does not exist" % args.action)
-    for server in config:
-        AVAILABLE_ACTIONS[args.action](server['server'])
+    kwargs = vars(parser.parse_args())
+    configs = yaml.load(kwargs.pop('filename'))
+    for config in configs:
+        globals()["job_%s" % kwargs.pop('action')](config['server'], **kwargs)
 
 
 if __name__ == "__main__":
