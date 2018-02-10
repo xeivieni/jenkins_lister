@@ -1,0 +1,13 @@
+certifi==2018.1.18
+chardet==3.0.4
+idna==2.6
+jenkinsapi==0.3.6
+multi-key-dict==2.0.3
+pbr==3.1.1
+python-jenkins==0.4.15
+pytz==2017.3
+PyYAML==3.12
+requests==2.18.4
+six==1.11.0
+terminaltables==3.1.0
+urllib3==1.22
