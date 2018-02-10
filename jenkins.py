@@ -13,11 +13,7 @@ class JenkinsHandler:
         table_data = [
             ['Name', 'Status', 'Url']
         ]
-        count = 0
         for job_name, job_instance in self.server.get_jobs():
-            count += 1
-            if count >= 10:
-                break
             table_data.append([
                 job_instance.name,
                 green('RUNNING') if job_instance.is_running() else
